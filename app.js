@@ -494,14 +494,32 @@ class DotaApp {
         const match = this.matchData;
         const player = this.playerData;
 
-        // ===== 英雄视频 =====
-        const video = document.getElementById('heroVideo');
-        video.src = getHeroVideoUrl(hero.name);
-        video.onerror = () => {
-            const container = document.getElementById('heroVideoContainer');
+        // ===== 英雄展示 (手机用图片, 桌面用视频) =====
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 900;
+        const container = document.getElementById('heroVideoContainer');
+
+        if (isMobile) {
+            // 手机端: 直接用高清大图 (WebM视频在iOS不支持)
             container.innerHTML = `<img src="${getHeroFullUrl(hero.name)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="${hero.cnName}">`;
             container.innerHTML += '<div class="hero-video-overlay"></div>';
-        };
+        } else {
+            // 桌面端: 尝试视频, 失败则回退到图片
+            const video = document.getElementById('heroVideo');
+            video.src = getHeroVideoUrl(hero.name);
+
+            const videoTimeout = setTimeout(() => {
+                // 5秒还没加载出来就换图片
+                container.innerHTML = `<img src="${getHeroFullUrl(hero.name)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="${hero.cnName}">`;
+                container.innerHTML += '<div class="hero-video-overlay"></div>';
+            }, 5000);
+
+            video.onloadeddata = () => clearTimeout(videoTimeout);
+            video.onerror = () => {
+                clearTimeout(videoTimeout);
+                container.innerHTML = `<img src="${getHeroFullUrl(hero.name)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="${hero.cnName}">`;
+                container.innerHTML += '<div class="hero-video-overlay"></div>';
+            };
+        }
 
         // 英雄名称
         document.getElementById('heroNameCn').textContent = hero.cnName;
