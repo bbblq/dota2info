@@ -1,6 +1,6 @@
 // ===== 配置 =====
-// __PLAYER_ID__ 会在容器启动时被环境变量替换
-const PLAYER_ID = __PLAYER_ID__;
+// Docker 启动时 entrypoint.sh 会替换此默认值
+const PLAYER_ID = 108067287;
 const API_BASE = 'https://api.opendota.com/api';
 
 // ===== 烟花系统 =====
@@ -284,7 +284,7 @@ function animateNumber(el, target, duration = 1500, suffix = '') {
 }
 
 // ===== 评价系统 =====
-function getPerformanceRating(kills, deaths, assists, heroDamage, duration) {
+function getPerformanceRating(kills, deaths, assists, heroDamage, duration, isWin) {
     const kda = deaths === 0 ? (kills + assists) : (kills + assists) / deaths;
     const dpm = heroDamage / (duration / 60);
 
@@ -314,14 +314,27 @@ function getPerformanceRating(kills, deaths, assists, heroDamage, duration) {
     else if (dpm >= 300) score += 10;
     else score += 5;
 
-    if (score >= 85) return { grade: 'S+', desc: '绝世无双', color: '#ffd700' };
-    if (score >= 70) return { grade: 'S', desc: '超神表现', color: '#ff8c00' };
-    if (score >= 60) return { grade: 'A+', desc: '势不可挡', color: '#e74c3c' };
-    if (score >= 50) return { grade: 'A', desc: '大杀特杀', color: '#e74c3c' };
-    if (score >= 40) return { grade: 'B+', desc: '英勇无畏', color: '#3498db' };
-    if (score >= 30) return { grade: 'B', desc: '稳健发挥', color: '#2ecc71' };
-    if (score >= 20) return { grade: 'C', desc: '中规中矩', color: '#95a5a6' };
-    return { grade: 'D', desc: '初露锋芒', color: '#95a5a6' };
+    // 赢了就狠狠吹 🎉
+    if (isWin) {
+        if (score >= 85) return { grade: 'S+', desc: '👑 天神下凡！对面已卸载游戏', color: '#ffd700' };
+        if (score >= 70) return { grade: 'S', desc: '🔥 杀穿对面！这把MVP没跑了', color: '#ff8c00' };
+        if (score >= 60) return { grade: 'A+', desc: '💪 carry全场！队友直呼带爹', color: '#e74c3c' };
+        if (score >= 50) return { grade: 'A', desc: '🎯 绝对核心！没你真赢不了', color: '#e74c3c' };
+        if (score >= 40) return { grade: 'B+', desc: '⭐ 稳如老狗！团战定海神针', color: '#3498db' };
+        if (score >= 30) return { grade: 'B', desc: '🛡️ 默默付出！赢了全靠你兜底', color: '#2ecc71' };
+        if (score >= 20) return { grade: 'C', desc: '🤝 功不可没！队伍重要拼图', color: '#95a5a6' };
+        return { grade: 'D', desc: '🍀 躺赢大师！这也是一种实力', color: '#95a5a6' };
+    }
+
+    // 输了就狠狠踩 💀
+    if (score >= 85) return { grade: 'S+', desc: '😭 你尽力了 但队友不配拥有你', color: '#ffd700' };
+    if (score >= 70) return { grade: 'S', desc: '💔 一人扛不住四个坑 太难了', color: '#ff8c00' };
+    if (score >= 60) return { grade: 'A+', desc: '🤡 打得挺好 下次别打了', color: '#e74c3c' };
+    if (score >= 50) return { grade: 'A', desc: '🪦 虽败犹荣？不，就是纯败', color: '#e74c3c' };
+    if (score >= 40) return { grade: 'B+', desc: '🐌 不上不下 纯纯的酱油怪', color: '#3498db' };
+    if (score >= 30) return { grade: 'B', desc: '💩 请问你这把进游戏了吗？', color: '#95a5a6' };
+    if (score >= 20) return { grade: 'C', desc: '🗑️ 菜到抠脚 建议回去打人机', color: '#7f8c8d' };
+    return { grade: 'F', desc: '☠️ 一坨！送到对面感恩戴德', color: '#555555' };
 }
 
 // ===== 时间格式化 =====
@@ -537,7 +550,7 @@ class DotaApp {
         }, 1200);
 
         // ===== 评价 =====
-        const rating = getPerformanceRating(player.kills, player.deaths, player.assists, player.hero_damage, match.duration);
+        const rating = getPerformanceRating(player.kills, player.deaths, player.assists, player.hero_damage, match.duration, isWin);
         document.getElementById('ratingGrade').textContent = rating.grade;
         document.getElementById('ratingDesc').textContent = rating.desc;
         document.getElementById('ratingBadge').style.background = `linear-gradient(135deg, ${rating.color}, ${rating.color}dd)`;
