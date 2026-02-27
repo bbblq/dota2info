@@ -1,0 +1,9 @@
+services:
+  dota2-player-info:
+    image: bbblq/dota2-player-info:latest
+    container_name: dota2-player-info
+    restart: unless-stopped
+    ports:
+      - "7963:7963"
+    environment:
+      - PLAYER_ID=108067287

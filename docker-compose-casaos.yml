@@ -1,0 +1,61 @@
+name: dota2-player-info
+services:
+  dota2-player-info:
+    image: bbblq/dota2-player-info:latest
+    container_name: dota2-player-info
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - target: 7963
+        published: "7963"
+        protocol: tcp
+    environment:
+      PLAYER_ID: "108067287"
+    x-casaos:
+      envs:
+        - container: PLAYER_ID
+          description:
+            en_us: "Dota2 Steam32 Player ID (find at opendota.com)"
+            zh_cn: "Dota2 Steam32 玩家 ID (在 opendota.com 查找)"
+      ports:
+        - container: "7963"
+          description:
+            en_us: "Web UI Port"
+            zh_cn: "网页端口"
+      volumes: []
+      hostname: ""
+      privileged: false
+      cap_add: []
+      icon: https://cdn.akamai.steamstatic.com/apps/dota2/images/dota_react/global/dota2_logo_symbol.png
+      scheme: http
+      index: /
+      port_map: "7963"
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  author: bbblq
+  category: Games
+  description:
+    en_us: A stunning Dota 2 personal match showcase page with hero videos, fireworks on victory, slash effects on defeat, and full Chinese localization.
+    zh_cn: 酷炫的 Dota2 个人最近比赛展示页面，包含英雄动态视频、胜利烟花、失败刀劈特效，全中文界面。
+  developer: bbblq
+  icon: https://cdn.akamai.steamstatic.com/apps/dota2/images/dota_react/global/dota2_logo_symbol.png
+  main: dota2-player-info
+  tagline:
+    en_us: Dota2 Match Showcase
+    zh_cn: Dota2 战绩展示
+  thumbnail: ""
+  tips:
+    before_install:
+      en_us: |
+        Set your Dota2 Steam32 ID in the PLAYER_ID environment variable.
+        Find your ID at https://www.opendota.com
+      zh_cn: |
+        请在 PLAYER_ID 环境变量中设置你的 Dota2 Steam32 ID。
+        可在 https://www.opendota.com 查找你的 ID。
+  title:
+    en_us: Dota2 Player Info
+    zh_cn: Dota2 战绩展示
+  port_map: "7963"

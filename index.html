@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOTA 2 战绩展示</title>
+    <meta name="description" content="Dota 2 玩家最近比赛数据展示，包含英雄动态视频和详细战绩分析">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 粒子背景 -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- 烟花画布 (胜利) -->
+    <canvas id="fireworksCanvas"></canvas>
+
+    <!-- 刀劈效果 (失败) -->
+    <div id="slashOverlay" class="slash-overlay">
+        <div class="slash-line slash-1"></div>
+        <div class="slash-line slash-2"></div>
+        <div class="slash-sparks">
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+        </div>
+        <div class="slash-flash"></div>
+        <div class="defeat-text-container">
+            <span class="defeat-char">败</span>
+            <span class="defeat-char">北</span>
+        </div>
+    </div>
+
+    <!-- 加载界面 -->
+    <div id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <svg viewBox="0 0 100 100" class="loading-icon">
+                    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="none" stroke="url(#loadGrad)"
+                        stroke-width="2" />
+                    <defs>
+                        <linearGradient id="loadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#e74c3c" />
+                            <stop offset="100%" style="stop-color:#f39c12" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="loading-spinner"></div>
+            </div>
+            <h2 class="loading-text">正在加载比赛数据</h2>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面 - 第一屏 -->
+    <section id="heroSection" class="hero-section">
+        <!-- 左半屏: 英雄展示 -->
+        <div class="hero-display" id="heroDisplay">
+            <div class="hero-video-container" id="heroVideoContainer">
+                <video id="heroVideo" autoplay loop muted playsinline></video>
+                <div class="hero-video-overlay"></div>
+            </div>
+            <div class="hero-name-badge" id="heroNameBadge">
+                <span class="hero-name-cn" id="heroNameCn"></span>
+                <span class="hero-name-en" id="heroNameEn"></span>
+            </div>
+            <div class="hero-role-tags" id="heroRoleTags"></div>
+        </div>
+
+        <!-- 右半屏: 比赛数据 -->
+        <div class="match-overview" id="matchOverview">
+            <!-- 比赛结果 -->
+            <div class="match-result-banner" id="matchResultBanner">
+                <div class="result-glow" id="resultGlow"></div>
+                <h1 class="result-text" id="resultText"></h1>
+                <div class="match-meta" id="matchMeta"></div>
+            </div>
+
+            <!-- 核心数据 -->
+            <div class="core-stats" id="coreStats">
+                <div class="kda-display" id="kdaDisplay">
+                    <div class="kda-item kills">
+                        <span class="kda-value" id="killsValue">0</span>
+                        <span class="kda-label">击杀</span>
+                    </div>
+                    <div class="kda-separator">/</div>
+                    <div class="kda-item deaths">
+                        <span class="kda-value" id="deathsValue">0</span>
+                        <span class="kda-label">死亡</span>
+                    </div>
+                    <div class="kda-separator">/</div>
+                    <div class="kda-item assists">
+                        <span class="kda-value" id="assistsValue">0</span>
+                        <span class="kda-label">助攻</span>
+                    </div>
+                </div>
+                <div class="kda-ratio" id="kdaRatio">
+                    <span class="kda-ratio-label">KDA</span>
+                    <span class="kda-ratio-value" id="kdaRatioValue">0.00</span>
+                </div>
+            </div>
+
+            <!-- 评价 -->
+            <div class="performance-rating" id="performanceRating">
+                <div class="rating-badge" id="ratingBadge">
+                    <span class="rating-grade" id="ratingGrade">S</span>
+                </div>
+                <span class="rating-desc" id="ratingDesc">超神表现</span>
+            </div>
+
+            <!-- 详细数据 -->
+            <div class="detail-stats" id="detailStats">
+                <div class="stat-card" data-delay="0">
+                    <div class="stat-icon">⚔️</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="heroDamage">0</span>
+                        <span class="stat-label">英雄伤害</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="heroDamageBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="100">
+                    <div class="stat-icon">🏰</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="towerDamage">0</span>
+                        <span class="stat-label">建筑伤害</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="towerDamageBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="200">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="gpm">0</span>
+                        <span class="stat-label">每分钟金钱</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="gpmBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="300">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="xpm">0</span>
+                        <span class="stat-label">每分钟经验</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="xpmBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="400">
+                    <div class="stat-icon">🗡️</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="lastHits">0</span>
+                        <span class="stat-label">正补</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="lastHitsBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="500">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="heroLevel">0</span>
+                        <span class="stat-label">等级</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="heroLevelBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="600">
+                    <div class="stat-icon">💎</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="netWorth">0</span>
+                        <span class="stat-label">总经济</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="netWorthBar"></div>
+                    </div>
+                </div>
+                <div class="stat-card" data-delay="700">
+                    <div class="stat-icon">💚</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="heroHealing">0</span>
+                        <span class="stat-label">治疗量</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="heroHealingBar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 参与度 -->
+            <div class="participation" id="participation">
+                <div class="participation-ring">
+                    <svg viewBox="0 0 120 120" id="participationSvg">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" />
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="url(#partGrad)" stroke-width="8"
+                            stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round"
+                            id="participationCircle" transform="rotate(-90 60 60)" />
+                        <defs>
+                            <linearGradient id="partGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#e74c3c" />
+                                <stop offset="100%" style="stop-color:#f39c12" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="participation-value">
+                        <span id="participationValue">0%</span>
+                        <span class="participation-label">参与度</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 滚动提示 -->
+            <div class="scroll-hint">
+                <span>下滑查看比赛详情</span>
+                <div class="scroll-arrow">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第二屏: 比赛详情 -->
+    <section id="matchDetail" class="match-detail-section">
+        <div class="detail-header">
+            <h2 class="section-title">
+                <span class="title-icon">📊</span>
+                比赛详情
+            </h2>
+            <div class="match-score-summary" id="matchScoreSummary"></div>
+        </div>
+
+        <!-- 天辉阵容 -->
+        <div class="team-section" id="radiantSection">
+            <div class="team-header radiant">
+                <div class="team-indicator"></div>
+                <h3>天辉</h3>
+                <span class="team-result" id="radiantResult"></span>
+                <span class="team-score" id="radiantScore"></span>
+            </div>
+            <div class="players-table">
+                <div class="table-header">
+                    <span class="col-hero">英雄</span>
+                    <span class="col-player">玩家</span>
+                    <span class="col-kda">K/D/A</span>
+                    <span class="col-lh">正补</span>
+                    <span class="col-gpm">GPM</span>
+                    <span class="col-xpm">XPM</span>
+                    <span class="col-dmg">英雄伤害</span>
+                    <span class="col-tower">建筑伤害</span>
+                    <span class="col-net">经济</span>
+                </div>
+                <div id="radiantPlayers" class="players-list"></div>
+            </div>
+        </div>
+
+        <!-- 夜魇阵容 -->
+        <div class="team-section" id="direSection">
+            <div class="team-header dire">
+                <div class="team-indicator"></div>
+                <h3>夜魇</h3>
+                <span class="team-result" id="direResult"></span>
+                <span class="team-score" id="direScore"></span>
+            </div>
+            <div class="players-table">
+                <div class="table-header">
+                    <span class="col-hero">英雄</span>
+                    <span class="col-player">玩家</span>
+                    <span class="col-kda">K/D/A</span>
+                    <span class="col-lh">正补</span>
+                    <span class="col-gpm">GPM</span>
+                    <span class="col-xpm">XPM</span>
+                    <span class="col-dmg">英雄伤害</span>
+                    <span class="col-tower">建筑伤害</span>
+                    <span class="col-net">经济</span>
+                </div>
+                <div id="direPlayers" class="players-list"></div>
+            </div>
+        </div>
+
+        <!-- 比赛总览 -->
+        <div class="match-summary-cards" id="matchSummaryCards">
+            <div class="summary-card">
+                <div class="summary-icon">🕐</div>
+                <div class="summary-info">
+                    <span class="summary-value" id="matchDuration">--:--</span>
+                    <span class="summary-label">比赛时长</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">🎮</div>
+                <div class="summary-info">
+                    <span class="summary-value" id="gameMode">--</span>
+                    <span class="summary-label">游戏模式</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">🏟️</div>
+                <div class="summary-info">
+                    <span class="summary-value" id="lobbyType">--</span>
+                    <span class="summary-label">比赛类型</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">🆔</div>
+                <div class="summary-info">
+                    <span class="summary-value match-id-val" id="matchIdDisplay">--</span>
+                    <span class="summary-label">比赛ID</span>
+                </div>
+            </div>
+        </div>
+
+        <footer class="page-footer">
+            <p>数据来自 <a href="https://www.opendota.com" target="_blank">OpenDota</a> API ·
+                <a href="https://www.opendota.com/matches/" id="matchLink" target="_blank">在 OpenDota 查看完整比赛</a>
+            </p>
+        </footer>
+    </section>
+
+    <script src="heroes.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
