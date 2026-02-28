@@ -323,6 +323,23 @@ body {
     animation: slideInRight 0.8s ease 0.5s forwards;
 }
 
+/* 玩家昵称 */
+.player-nickname {
+    font-family: var(--font-body);
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #ffd700, #f39c12, #e74c3c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.3));
+    position: relative;
+    z-index: 1;
+}
+
 .result-glow {
     position: absolute;
     top: -50%;
@@ -1110,6 +1127,11 @@ body {
 
     .hero-name-cn {
         font-size: 32px;
+    }
+
+    .player-nickname {
+        font-size: 26px;
+        letter-spacing: 3px;
     }
 
     .match-summary-cards {

@@ -498,10 +498,38 @@ class DotaApp {
         const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 900;
         const container = document.getElementById('heroVideoContainer');
 
+        // 图片加载辅助函数，支持多源回退
+        const loadHeroImage = (containerEl, heroName, heroCnName) => {
+            // 主图片URL
+            const primaryUrl = getHeroFullUrl(heroName);
+            // 备用图片URL (英雄头像，通常更小但更可靠)
+            const fallbackUrl = `https://cdn.akamai.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroName}.png`;
+
+            containerEl.innerHTML = `
+                <img src="${primaryUrl}" 
+                     crossorigin="anonymous" 
+                     referrerpolicy="no-referrer"
+                     style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;" 
+                     alt="${heroCnName}"
+                     id="heroImage">
+                <div class="hero-video-overlay"></div>
+            `;
+
+            const img = containerEl.querySelector('#heroImage');
+            img.onerror = () => {
+                console.log('主图片加载失败，尝试备用URL:', fallbackUrl);
+                img.onerror = () => {
+                    console.log('备用图片也加载失败，使用纯色背景');
+                    img.style.display = 'none';
+                    containerEl.style.background = 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)';
+                };
+                img.src = fallbackUrl;
+            };
+        };
+
         if (isMobile) {
-            // 手机端: 直接用高清大图 (WebM视频在iOS不支持)
-            container.innerHTML = `<img src="${getHeroFullUrl(hero.name)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="${hero.cnName}">`;
-            container.innerHTML += '<div class="hero-video-overlay"></div>';
+            // 手机端: 直接用图片，带referrerpolicy和crossorigin属性
+            loadHeroImage(container, hero.name, hero.cnName);
         } else {
             // 桌面端: 尝试视频, 失败则回退到图片
             const video = document.getElementById('heroVideo');
@@ -509,15 +537,13 @@ class DotaApp {
 
             const videoTimeout = setTimeout(() => {
                 // 5秒还没加载出来就换图片
-                container.innerHTML = `<img src="${getHeroFullUrl(hero.name)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="${hero.cnName}">`;
-                container.innerHTML += '<div class="hero-video-overlay"></div>';
+                loadHeroImage(container, hero.name, hero.cnName);
             }, 5000);
 
             video.onloadeddata = () => clearTimeout(videoTimeout);
             video.onerror = () => {
                 clearTimeout(videoTimeout);
-                container.innerHTML = `<img src="${getHeroFullUrl(hero.name)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="${hero.cnName}">`;
-                container.innerHTML += '<div class="hero-video-overlay"></div>';
+                loadHeroImage(container, hero.name, hero.cnName);
             };
         }
 
@@ -534,6 +560,11 @@ class DotaApp {
         if (player.tower_damage > 5000) tags.push('推进');
 
         roleTags.innerHTML = tags.map(t => `<span class="hero-role-tag">${t}</span>`).join('');
+
+        // ===== 玩家昵称 =====
+        const playerName = player.personaname || '未知玩家';
+        const nicknameEl = document.getElementById('playerNickname');
+        nicknameEl.textContent = playerName;
 
         // ===== 比赛结果 =====
         const resultText = document.getElementById('resultText');
@@ -666,7 +697,7 @@ class DotaApp {
 
         return `
             <div class="player-row ${isMe ? 'is-me' : ''}">
-                <img class="player-hero-icon" src="${heroIcon}" alt="${heroName}" onerror="this.style.display='none'">
+                <img class="player-hero-icon" src="${heroIcon}" alt="${heroName}" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.style.display='none'">
                 <span class="player-name">
                     ${playerName}
                     <span class="hero-cn-name">${heroName}</span>
